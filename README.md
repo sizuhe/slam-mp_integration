@@ -9,10 +9,10 @@ To install gz sim Harmonic with their dependencies to work with ROS2 Humble, run
 
 ``` bash
 # Add the Gazebo Harmonic repository
-sudo wget [https://packages.osrfoundation.org/gazebo.gpg](https://packages.osrfoundation.org/gazebo.gpg) -O /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] [http://packages.osrfoundation.org/gazebo/ubuntu-stable](http://packages.osrfoundation.org/gazebo/ubuntu-stable) $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
+sudo wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
 
-# Install Gazebo Harmonic and ROS 2 Humble bridge
+# Install Gazebo Harmonic:
 sudo apt-get update
 sudo apt-get install gz-harmonic
 sudo apt-get install ros-humble-ros-gzharmonic
@@ -22,7 +22,7 @@ sudo apt-get install ros-humble-ros-gzharmonic
 The Micro XRCE-DDS agent is required to enable communication between PX4 and ROS 2.
 ``` bash
 cd
-git clone [https://github.com/eProsima/Micro-XRCE-DDS-Agent.git](https://github.com/eProsima/Micro-XRCE-DDS-Agent.git)
+git clone https://github.com/eProsima/Micro-XRCE-DDS-Agent.git
 cd Micro-XRCE-DDS-Agent
 mkdir build
 cd build
@@ -45,14 +45,14 @@ sudo apt-get update
 sudo apt-get install -y gstreamer1.0-plugins-bad gstreamer1.0-libav gstreamer1.0-gl libqt5gui5 libfuse2
 
 # Download the QGroundControl AppImage and grant execution permissions
-wget [https://github.com/mavlink/qgroundcontrol/releases/download/v4.3.0/QGroundControl.AppImage](https://github.com/mavlink/qgroundcontrol/releases/download/v4.3.0/QGroundControl.AppImage)
+wget https://github.com/mavlink/qgroundcontrol/releases/download/v4.3.0/QGroundControl.AppImage
 chmod +x ./QGroundControl.AppImage
 ```
 
 ### Install the custom PX4-Autopilot Repository
 Clone the customized PX4 repository that contains the customized VTOL, worlds, plugins and install the standard Ubuntu toolchains.
 ``` bash
-git clone [https://github.com/Darkjrcy/PX4-Autopilot.git](https://github.com/Darkjrcy/PX4-Autopilot.git) --recursive -b scitech_erau-udea
+git clone https://github.com/Darkjrcy/PX4-Autopilot.git --recursive -b scitech_erau-udea
 cd PX4-Autopilot
 bash ./Tools/setup/ubuntu.sh
 ```
