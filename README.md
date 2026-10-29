@@ -1,74 +1,105 @@
-# Autonomous GPS-Denied Simulation Setup
+# ERAU-UdeA Simulation Setup
+This repository contains the ROS 2 package, Gazebo models, and scripts used to run the PX4 simulation. The project is organized around three areas:
 
-This guide details the process for configuring Gazebo Harmonic, installing all necessary dependencies, setting up the custom PX4-Autopilot repository, and running the GPS denied simulation.
+- `codes/`: ROS 2 colcon workspace - **Develop** the package code inside `codes/src/ros2_erau-udea/`.
+- `models/`: Custom Gazebo models.
+- `libs/`: Installed dependencies.
 
-## 1. Installation of Dependencies
+> The `scripts/` directory contains the installation and configuration scripts.
 
-### Install Gazebo Hamonic for ROS2 Humble.
-To install gz sim Harmonic with their dependencies to work with ROS2 Humble, run these commands:
 
-``` bash
-# Add the Gazebo Harmonic repository
-sudo wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
 
-# Install Gazebo Harmonic:
-sudo apt-get update
-sudo apt-get install gz-harmonic
-sudo apt-get install ros-humble-ros-gzharmonic
+## Requirements
+ROS 2 is the only direct requirement, other dependencies are installed per the `install.sh` script.
+
+The code uses `ROS_DISTRO=jazzy` by default. To use another ROS distribution, export it before running the scripts:
+```bash
+export ROS_DISTRO=<your-ros-distribution>
 ```
 
-### Install the Micro XRCE-DDS Agent
-The Micro XRCE-DDS agent is required to enable communication between PX4 and ROS 2.
-``` bash
-cd
-git clone https://github.com/eProsima/Micro-XRCE-DDS-Agent.git
-cd Micro-XRCE-DDS-Agent
-mkdir build
-cd build
-cmake ..
-make
-sudo make install
-cd
-sudo ldconfig /usr/local/lib/
+The PX4 setup script may install additional toolchains and system packages. The QGroundControl installation also adds the current user to the `dialout` group, so log out and back in after installation.
+
+
+
+## Installation
+Run the installer from the repository path:
+
+```bash
+chmod +x install.sh scripts/*.sh terminals.sh
+./install.sh
 ```
 
-### Install QGroundControl
-Configure your system permissions, install the required dependencies (such as video streaming libraries), and download the QGroundControl AppImage.
-``` bash
-# Remove ModemManager (prevents serial connection interference) and add user to dialout
-sudo usermod -a -G dialout $USER
-sudo apt-get remove modemmanager -y
-sudo apt-get update
 
-# Install QGroundControl dependencies
-sudo apt-get install -y gstreamer1.0-plugins-bad gstreamer1.0-libav gstreamer1.0-gl libqt5gui5 libfuse2
+### Installation process
+The dependency menu can install each component independently:
 
-# Download the QGroundControl AppImage and grant execution permissions
-wget https://github.com/mavlink/qgroundcontrol/releases/download/v4.3.0/QGroundControl.AppImage
-chmod +x ./QGroundControl.AppImage
+1. Installs `gz-harmonic` and `ros-$ROS_DISTRO-ros-gz` based on the installed ROS 2 distribution.
+2. Donwloads and installs `QGroundControl.AppImage` to the repository root and makes it executable.
+3. Installs the Micro XRCE-DDS Agent version `v2.4.3`.
+4. Clones the `scitech_erau-udea` branch of the custom PX4 fork into `libs/PX4-Autopilot`.
+5. Clones the `release/1.16` branch into `libs/px4_msgs`.
+
+Choose **Install everything automatically** to run all five installation steps. The PX4 setup script may require a reboot before PX4 is built for the first time.
+
+
+### Configure simulation
+After installing dependencies, choose **Configure simulation**. The configuration menu provides:
+
+- **Copy custom models into PX4**: copies `models/.` to `libs/PX4-Autopilot/Tools/simulation/gz/models/`.
+- **Build colcon workspace**: sources ROS 2 and `px4_msgs`, then runs `colcon build --symlink-install` from `codes/`.
+- **Configure everything automatically**: performs both operations.
+
+
+
+## Running the simulation
+`terminals.sh` is intended to open multiple GNOME Terminal windows for the agent, PX4/Gazebo, ROS-Gazebo bridge, and ROS 2 work. Its optional argument is the number of additional development terminals:
+
+```bash
+./terminals.sh       # one additional terminal
+./terminals.sh 3     # three additional terminals
 ```
 
-### Install the custom PX4-Autopilot Repository
-Clone the customized PX4 repository that contains the customized VTOL, worlds, plugins and install the standard Ubuntu toolchains.
-``` bash
-git clone https://github.com/Darkjrcy/PX4-Autopilot.git --recursive -b scitech_erau-udea
-cd PX4-Autopilot
-bash ./Tools/setup/ubuntu.sh
+The manual steps below are equivalent to the `terminals.sh` script, but they can be run in any terminal emulator:
+
+1. Start the Micro XRCE-DDS Agent: `MicroXRCEAgent udp4 -p 8888`.
+2. Start PX4 SITL and Gazebo: `cd PX4-Autopilot && PX4_GZ_WORLD=erau_test make px4_sitl gz_standard_vtol_cam_lidar`.
+3. Start QGroundControl: `./QGroundControl.AppImage`.
+4. Start ROS 2 tools or nodes (see below).
+    In a new terminal, source the environments and then use the project commands, for example:
+    
+    ```bash
+    source /opt/ros/${ROS_DISTRO:-jazzy}/setup.bash
+    source libs/px4_msgs/install/local_setup.bash
+    source codes/install/setup.bash
+    ros2 topic list
+    ```
+
+
+
+## `Justfile` commands
+Install `just` if it is not already available, then run commands from the repository root. The current recipes are:
+
+| Command | Purpose |
+| --- | --- |
+| `just help` | List available recipes. |
+| `just topics` | List ROS 2 topics with `ros2 topic list`. |
+| `just topic_info <topic>` | Show information for a ROS 2 topic. |
+| `just echo_topic <topic>` | Echo messages from a ROS 2 topic. |
+| `just odom` | Echo `/odom` position data only. |
+| `just gz_topics` | List Gazebo topics. |
+| `just kill` | Stop matching ROS 2, Gazebo, PX4, and Micro XRCE-DDS processes. |
+
+
+
+## Cleaning generated files
+To rebuild the ROS 2 workspace from scratch, remove only its generated directories and rebuild:
+
+```bash
+rm -rf codes/build codes/install codes/log
+source /opt/ros/${ROS_DISTRO:-jazzy}/setup.bash
+source libs/px4_msgs/install/local_setup.bash
+cd codes
+colcon build --symlink-install
 ```
 
-## 2. Steps to Open the Simulation.
-To run the full PX4 simlation of the custom standard_vtol with the camera and the 3D lidar follow the next steps:
-1. In one terminal run the PX4 simulation:
-``` bash
-cd PX4-Autopilot
-PX4_GZ_WORLD=erau_test make px4_sitl gz_standard_vtol_cam_lidar
-```
-2. In another terminal start the QGroundControl AppImage
-``` bash
-./QGroundControl.AppImage
-```
-3. In another terminal enable ROS 2 communication by running the agent on the default PX4 UDP port:
-``` bash
-MicroXRCEAgent udp4 -p 8888
-```
+Do not remove `libs/` unless the external dependencies must be downloaded and built again.
